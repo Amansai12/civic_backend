@@ -1,5 +1,5 @@
 import express from 'express';
-import { confirmResolution, createIssue, forwardIssue, getAnalytics, getConflictIssues, getForwardedIssues, getIssueById, getIssuesByAuthority, getIssuesByOffice, getNearbyIssues, monthlyReport, rejectResolution, report, unupVote, updateIssue, upVote } from '../controllers/issue.controller.js';
+import { authorityFault, citizenFault, confirmResolution, createIssue, forwardIssue, getAnalytics, getConflictIssues, getForwardedIssues, getIssueById, getIssuesByAuthority, getIssuesByOffice, getNearbyIssues, monthlyReport, rejectResolution, report, unupVote, updateIssue, upVote } from '../controllers/issue.controller.js';
 import { verifyToken } from '../middlewares/verifyToken.js';
 
 
@@ -16,6 +16,8 @@ issueRouter.put('/confirmresolution',verifyToken,confirmResolution)
 issueRouter.put('/rejectresolution',verifyToken,rejectResolution)
 issueRouter.get('/:issueId/report',verifyToken,report)
 issueRouter.get('/conflict',verifyToken,getConflictIssues)
+issueRouter.get('/citizen-fault/:issueId',verifyToken,citizenFault)
+issueRouter.get('/authority-fault/:issueId',verifyToken,authorityFault)
 issueRouter.get('/analytics',verifyToken,getAnalytics)
 issueRouter.put('/upvote',verifyToken,upVote)
 issueRouter.put('/unupvote',verifyToken,unupVote)

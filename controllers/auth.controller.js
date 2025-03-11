@@ -508,10 +508,7 @@ export const ResetAuthorityPassword = async (req, res) => {
 
 export const logout = async (req, res) => {
     try {
-        res.cookie("token", "", {
-            httpOnly: true,
-            expires: new Date(0),
-        });
+        res.clearCookie("token");
 
         res.status(200).json({
             success: true,
@@ -541,6 +538,13 @@ export const verifyUserOtp_ResetPassword = async (req, res) => {
                     gt: new Date(),
                 },
             },
+            select : {
+                id : true,
+                name : true,
+                myList : true,
+                phone : true,
+                profileImage : true
+            }
         });
         if (!user) {
             return res.status(400).json({ success: false, message: "Invalid details", flag: 0 });
@@ -561,7 +565,8 @@ export const verifyUserOtp_ResetPassword = async (req, res) => {
 
         res.status(200).json({
             success: true,
-            flag: 1,
+            user : user,
+            token : req.cookies.token
         });
     } catch (error) {
         console.log("Error occured verifying OTP ", error);
@@ -585,6 +590,7 @@ export const getUser = async (req, res) => {
                             id: true,
                         },
                     },
+                    myList:true
                 },
             });
             if (!user) {
@@ -759,3 +765,43 @@ export const verifyOtpForEmailUpdate = async (req, res) => {
         res.status(400).json({ success: false, error: error.message });
     }
 };
+
+export const getAuthorities = async (req, res) => {
+    const userId = req.userId;
+    try {
+        const admin = await prisma.authority.findUnique({
+            where: {
+                id: userId,
+            },
+            select:{
+                id : true,
+                officeId : true,
+                role : true,
+            }
+        });
+        if (!admin) {
+            return res.status(404).json({ success: false, error: "User not found" });
+        }
+        if(admin.role !== "Representative authority") {
+            console.log(admin.role);
+            return res.status(403).json({ success: false, error: "You are not authorized to perform this action" });
+        }
+        const authorities = await prisma.authority.findMany({
+            where: {
+                officeId: admin.officeId,
+            },
+            select:{
+                id : true,
+                name : true,
+                email : true,
+                officeId : true,
+                role : true,
+                profileImage : true,
+            }
+        });
+        res.status(200).json({ success: true, authorities });
+    } catch (e) {
+        console.log("Error in getAuthorities ", e);
+        res.status(400).json({ success: false, error: e.message });
+    }
+}

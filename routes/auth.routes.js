@@ -16,6 +16,8 @@ import {
     getUser,
     editAuthProfile,
     verifyOtpForEmailUpdate,
+    getAuthorities,
+    logout,
 } from "../controllers/auth.controller.js";
 
 import { verifyToken } from "../middlewares/verifyToken.js";
@@ -45,6 +47,9 @@ authRouter.post("/verify-user-otp", verifyUserOtp_ResetPassword);
 authRouter.post("/update-authority", verifyToken, editAuthProfile);
 
 authRouter.post("/verify-otp-email-update", verifyToken, verifyOtpForEmailUpdate);
+
+authRouter.get('/authorities', verifyToken, getAuthorities);
+authRouter.get('/logout',verifyToken,logout)
 
 authRouter.get("/", verifyToken, getUser);
 

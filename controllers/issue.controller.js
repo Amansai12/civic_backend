@@ -107,9 +107,12 @@ export const createIssue = async (req, res) => {
                     });
                 }
             }
-    
-            const imageUrl = await uploadOnCloudinary(image.tempFilePath, "issues");
-            const audioUrl = await uploadOnCloudinary(audio, "issues");
+            
+            let imageUrl = ""
+            let audioUrl = ""
+
+            if(image) imageUrl = await uploadOnCloudinary(image.tempFilePath, "issues");
+            if(audio) audioUrl = await uploadOnCloudinary(audio.tempFilePath, "issues");
     
             // Validate coordinates
             const lat = parseFloat(latitude);
@@ -144,7 +147,6 @@ export const createIssue = async (req, res) => {
                 "userId",
                 "location",
                 "status",
-                "dispute",
                 "isAnonymous",
                 "createdAt",
                 "address",
@@ -160,7 +162,6 @@ export const createIssue = async (req, res) => {
                 ${userId},
                 ST_AsText(ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)),
                 'UNDER_REVIEW',
-                false,
                 ${anonymous},
                 NOW(),
                 ${address},
@@ -432,6 +433,7 @@ export const getIssuesByOffice = async (req, res) => {
                             },
                         ],
                     },
+
                 ],
             },
             include: {
@@ -558,6 +560,7 @@ export const getIssuesByAuthority = async (req, res) => {
                         },
                     },
                 ],
+                
             },
             include: {
                 office: true,
@@ -1108,7 +1111,7 @@ export const getConflictIssues = async (req, res) => {
                 office: true,
             },
         });
-        console.log(user);
+        
         if (!user) {
             return res.status(404).json({ success: false, error: "User not found" });
         }
@@ -1208,6 +1211,8 @@ export const getConflictIssues = async (req, res) => {
                 limit: LIMIT,
                 totalPages: Math.ceil(totalIssues / LIMIT),
             },
+
+    
         });
     } catch (e) {
         console.log("Error in getIssuesByOffice ", e);
@@ -1221,85 +1226,105 @@ export const getAnalytics = async (req, res) => {
     const userId = req.userId;
     let fromDate = req.query.fromDate;
     let toDate = req.query.toDate;
-
+    let type = req.query.type;
+  
     if (!fromDate || fromDate == "null")
         fromDate = new Date(new Date().setDate(new Date().getDate() - 7)).toISOString();
     if (!toDate || toDate == "null") toDate = new Date().toISOString();
 
     try {
-        const user = await prisma.authority.findUnique({
-            where: { id: userId },
-            include: {
-                office: true,
-            },
-        });
-        if (!user) {
-            return res.status(404).json({ success: false, error: "User not found" });
-        }
-        if (user.role !== "Representative authority") {
-            return res.status(403).json({
-                success: false,
-                error: "You are not authorized to view this office",
+        if(type == "Representative authority"){
+            const user = await prisma.authority.findUnique({
+                where: { id: userId },
+                include: {
+                    office: true,
+                },
             });
-        }
-        const analytics = [];
-
-        const byStatus = [];
-        for (let i = 0; i < statuses.length; i++) {
-            const status = statuses[i];
-            const issues = await prisma.issue.count({
+            if (!user) {
+                return res.status(404).json({ success: false, error: "User not found" });
+            }
+            if (user.role !== "Representative authority") {
+                return res.status(403).json({
+                    success: false,
+                    error: "You are not authorized to view this office",
+                });
+            }
+            const analytics = [];
+    
+            const byStatus = [];
+            for (let i = 0; i < statuses.length; i++) {
+                const status = statuses[i];
+                const issues = await prisma.issue.count({
+                    where: {
+                        officeId: user.office.id,
+                        status: status,
+                        createdAt: {
+                            gte: new Date(fromDate),
+                            lte: new Date(toDate),
+                        },
+                    },
+                    orderBy: {
+                        createdAt: "desc",
+                    },
+                });
+                byStatus.push({
+                    status: status,
+                    count: issues,
+                });
+            }
+    
+            const Issues = await prisma.issue.findMany({
                 where: {
                     officeId: user.office.id,
-                    status: status,
                     createdAt: {
                         gte: new Date(fromDate),
                         lte: new Date(toDate),
                     },
                 },
-                orderBy: {
-                    createdAt: "desc",
+                select: {
+                    id : true,
+                    location: true,
+                    latitude: true,
+                    longitude: true,
+                    upVotes: true,
+                    dispute: true,
+                    disputeMessage: true,
+                    departmentName: true,
+                    resolvedDate : true,
+                    status: true,
+                    title: true,
+                    updates: {
+                        select: {
+                            id: true,
+                        },
+                    },
+                    upVotes: {
+                        select: {
+                            id: true,
+                        },
+                    },
                 },
             });
-            byStatus.push({
-                status: status,
-                count: issues,
+    
+            res.status(200).json({ success: true, analytics, byStatus, Issues });
+        }else{
+            const user = await prisma.authority.findUnique({
+                where: { id: userId },
+                include: {
+                    assignedIssues: {
+                        include : {
+                            updates : true
+                        }
+                    }
+                },
             });
+
+            if (!user) {
+                return res.status(404).json({ success: false, error: "User not found" });
+            }
+
+            res.status(200).json({ success: true, issues : user.assignedIssues });
         }
-
-        const Issues = await prisma.issue.findMany({
-            where: {
-                officeId: user.office.id,
-                createdAt: {
-                    gte: new Date(fromDate),
-                    lte: new Date(toDate),
-                },
-                assignedToId: {
-                    not: null,
-                },
-            },
-            select: {
-                location: true,
-                latitude: true,
-                longitude: true,
-                upVotes: true,
-                dispute: true,
-                departmentName: true,
-                status: true,
-                title: true,
-                updates: {
-                    select: {
-                        id: true,
-                    },
-                },
-                upVotes: {
-                    select: {
-                        id: true,
-                    },
-                },
-            },
-        });
-
-        res.status(200).json({ success: true, analytics, byStatus, Issues });
     } catch (e) {
         console.log("Error in getAnalytics ", e);
         res.status(400).json({ success: false, error: e.message });
@@ -1356,7 +1381,6 @@ export const unupVote = async (req, res) => {
         }
 
         if (!issue.upVotes.find((upVote) => upVote.id === userId)) {
-            console.log("here");
             return res.status(400).json({ success: false, error: "You have not upvoted this issue" });
         }
 
@@ -1398,7 +1422,6 @@ export const monthlyReport = async (req, res) => {
                 office: true,
             },
         });
-        console.log(user);
         if (!user) {
             return res.status(404).json({ success: false, error: "User not found" });
         }
@@ -1600,3 +1623,86 @@ function calculateResponseRates(issues) {
         resolutionRate: Math.round((resolved / total) * 100),
     };
 }
+
+export const citizenFault = async (req,res) => {
+    const { issueId } = req.params;
+    const userId = req.userId;
+    try {
+        const user = await prisma.authority.findUnique({
+            where: {
+                id: userId,
+            },
+        });
+        if (!user) {
+            return res.status(404).json({ success: false, error: "User not found" });
+        }
+        if(user.role !== "Representative authority") {
+            return res.status(403).json({ success: false, error: "You are not authorized to perform this action" });
+        }
+        const issue = await prisma.issue.update({
+            where: {
+                id: issueId,
+            },
+            data:{
+                dispute : false,
+                conflictResolvedDate : new Date(),
+            },select:{
+                userId : true,
+            }
+        });
+        if (!issue) {
+            return res.status(404).json({ success: false, error: "Issue not found" });
+        }
+        await prisma.citizen.update({
+            where: {
+                id: issue.userId,
+            },
+            data:{
+                reputationPoints : {
+                    decrement : 10,
+                }
+            },
+        });
+       
+        res.status(200).json({ success: true });
+    } catch (e) {
+        console.log("Error in getIssueById ", e);
+        res.status(400).json({ success: false, error: e.message });
+    }
+};
+export const authorityFault = async (req,res) => {
+    const { issueId } = req.params;
+    const userId = req.userId;
+    try {
+        const user = await prisma.authority.findUnique({
+            where: {
+                id: userId,
+            },
+        });
+        if (!user) {
+            return res.status(404).json({ success: false, error: "User not found" });
+        }
+        if(user.role !== "Representative authority") {
+            return res.status(403).json({ success: false, error: "You are not authorized to perform this action" });
+        }
+        const issue = await prisma.issue.update({
+            where: {
+                id: issueId,
+            },
+            data:{
+                dispute : false,
+                conflictResolvedDate : new Date(),
+            },select:{
+                userId : true,
+            }
+        });
+        if (!issue) {
+            return res.status(404).json({ success: false, error: "Issue not found" });
+        }
+        res.status(200).json({ success: true });
+    } catch (e) {
+        console.log("Error in getIssueById ", e);
+        res.status(400).json({ success: false, error: e.message });
+    }
+};
+
