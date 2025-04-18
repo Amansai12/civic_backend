@@ -3,6 +3,7 @@ import prisma from "../prisma/index.js";
 import PDFDocument from "pdfkit";
 import amqp from "amqplib";
 import uploadOnCloudinary from "../utils/cloudinary.js";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const departments = [
     "administration",
@@ -14,6 +15,28 @@ const departments = [
     "environment",
     "engineering",
 ];
+
+
+
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
+async function generateResponse(description) {
+    try {
+        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+
+        // Define a custom prompt
+        const prompt = `Analyze the following description and provide a meaningful response:\n\n"${description}"`;
+
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        const text = response.text(); // Extract text output
+
+        return text; // Store result in a variable
+    } catch (error) {
+        console.error("Error generating response:", error);
+        return null;
+    }
+}
 
 async function sendNotification(phone, body) {
     try{
@@ -220,6 +243,9 @@ export const getNearbyIssues = async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 3;
     const search = req.query.search || "";
+
+    //const d = await generateResponse("A street light has fallen down on the road.");
+    //console.log(d);
 
     try {
         if (!latitude || !longitude) {

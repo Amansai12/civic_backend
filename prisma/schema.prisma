@@ -79,6 +79,7 @@ model Issue {
   conflictResolvedDate   DateTime?
   resolvedDate           DateTime?
   audio                  String
+  category               Category?
   assignedTo             Authority?     @relation("AssignedIssues", fields: [assignedToId], references: [id])
   department             Department?    @relation("DepartmentIssues", fields: [departmentOfficeId, departmentName], references: [officeId, name])
   office                 Office         @relation("OfficeIssues", fields: [officeId], references: [id])
@@ -133,4 +134,15 @@ enum status {
   DISPUTED
   FORWARDED
   UNDER_REVIEW
+}
+
+enum Category {
+  ENVIRONMENTAL_ISSUES
+  PUBLIC_SAFETY
+  PUBLIC_HEALTH
+  TRANSPORTATION
+  HOUSING
+  EDUCATION
+  ECONOMY
+  SOCIAL_WELFARE
 }
