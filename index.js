@@ -13,7 +13,7 @@ const app = express();
 
 app.use(
     cors({
-        origin: process.env.FRONTEND_URL,
+        origin: [process.env.FRONTEND_URL,"http://localhost:5173"],
         credentials: true,
     })
 );
@@ -29,5 +29,5 @@ app.use("/office", officeRouter);
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
-    console.log("Server running at http://localhost:" + PORT);
+    console.log(`Server running at : ${process.env.FRONTEND_UR}` + PORT);
 });
