@@ -13,7 +13,7 @@ const app = express();
 
 app.use(
     cors({
-        origin: ["http://localhost:5173","https://civic-wine.vercel.app"],
+        origin: process.env.FRONTEND_URL,
         credentials: true,
     })
 );

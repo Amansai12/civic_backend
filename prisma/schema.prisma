@@ -87,6 +87,7 @@ model Issue {
   Notifications          Notification[] @relation("IssueNotification")
   updates                Update[]
   upVotes                Citizen[]      @relation("upVoted")
+  priority String @default("NORMAL")
 }
 
 model Department {
