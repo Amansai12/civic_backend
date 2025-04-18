@@ -96,8 +96,8 @@ const findNearestOffice = async (prisma, latitude, longitude) => {
 export const createIssue = async (req, res) => {
     
         const { title, description, latitude, longitude, isAnonymous, address } = req.body;
-        const image = req.files.image;
-        const audio = req.files.audio;
+        const image = req.files?.image;
+        const audio = req.files?.audio;
         const userId = req.userId;
         const anonymous = isAnonymous == "true" ? true : false;
     
@@ -146,7 +146,7 @@ export const createIssue = async (req, res) => {
                 }
             }
             
-            let imageUrl = ""
+            let imageUrl = "https://t3.ftcdn.net/jpg/08/30/64/70/240_F_830647061_m02NGMtYotrjinuMU9RcAMuijUZX1k07.jpg"
             let audioUrl = ""
 
             if(image) imageUrl = await uploadOnCloudinary(image.tempFilePath, "issues");
@@ -172,9 +172,8 @@ export const createIssue = async (req, res) => {
                 });
             }
 
-            let priority = generateResponse(description);
+            let priority = await generateResponse(description);
             if(!priority) priority = "NORMAL"
-
     
             // Create the issue using raw query with geometry cast to text
             const [issue] = await prisma.$queryRaw`
