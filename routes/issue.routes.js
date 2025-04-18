@@ -33,34 +33,9 @@ issueRouter.post('/genAi',async (req,res) => {
     
 })
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-async function generateResponse(description) {
-    try {
-        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
-        
-        const prompt = `imagine yourself as a issue prioritizer and you will prioritize issue based on the given description
-                    if you are given a description you have to priotize the issue there are theree priorities
-                    1) NORMAL
-                    2) URGENT
-                    3) SEVERE
-                    you have to just return the priority for example
-                    description = a current pole has falled down in the street and the electric wires are on the roads
-                    output = SEVERE
-                    like this you have to return output
-                    so given description = ${description}`
 
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        const text = response.text(); // Extract text output
-
-        return text; // Store result in a variable
-    } catch (error) {
-        console.error("Error generating response:", error);
-        return null;
-    }
-}
 
 
 

@@ -24,8 +24,17 @@ async function generateResponse(description) {
     try {
         const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
-        // Define a custom prompt
-        const prompt = `Analyze the following description and provide a meaningful response:\n\n"${description}"`;
+        
+        const prompt = `imagine yourself as a issue prioritizer and you will prioritize issue based on the given description
+                    if you are given a description you have to priotize the issue there are theree priorities
+                    1) NORMAL
+                    2) URGENT
+                    3) SEVERE
+                    you have to just return the priority for example
+                    description = a current pole has falled down in the street and the electric wires are on the roads
+                    output = SEVERE
+                    like this you have to return output
+                    so given description = ${description}`
 
         const result = await model.generateContent(prompt);
         const response = await result.response;
@@ -156,6 +165,10 @@ export const createIssue = async (req, res) => {
                     error: "No nearest office found",
                 });
             }
+
+            let priority = generateResponse(description);
+            if(!priority) priority = "NORMAL"
+
     
             // Create the issue using raw query with geometry cast to text
             const [issue] = await prisma.$queryRaw`
@@ -174,7 +187,8 @@ export const createIssue = async (req, res) => {
                 "createdAt",
                 "address",
                 "audio",
-                "image"
+                "image",
+                "priority"
             ) VALUES (
                 gen_random_uuid(),
                 ${title},
@@ -189,7 +203,8 @@ export const createIssue = async (req, res) => {
                 NOW(),
                 ${address},
                 ${audioUrl},
-                ${imageUrl}
+                ${imageUrl},
+                ${priority}
     
             )
             RETURNING 
@@ -207,7 +222,8 @@ export const createIssue = async (req, res) => {
                 "createdAt",
                 "address",
                 "audio",
-                "image"
+                "image",
+                "priority"
         )
         SELECT * FROM new_issue;
     `;
