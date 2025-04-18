@@ -25,15 +25,17 @@ async function generateResponse(description) {
         const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
         
-        const prompt = `imagine yourself as a issue prioritizer and you will prioritize issue based on the given description
+        const prompt = `ypur role is an issue prioritizer and you will prioritize issue based on the given description
                     if you are given a description you have to priotize the issue there are theree priorities
                     1) NORMAL
                     2) URGENT
                     3) SEVERE
                     you have to just return the priority for example
                     description = a current pole has falled down in the street and the electric wires are on the roads
-                    output = SEVERE
+                    response = SEVERE
                     like this you have to return output
+                    if any issue description seems to be invalid the response should be NORMAL
+                    NOTE : Remember the response should be only a string
                     so given description = ${description}`
 
         const result = await model.generateContent(prompt);

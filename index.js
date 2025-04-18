@@ -29,5 +29,5 @@ app.use("/office", officeRouter);
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
-    console.log(`Server running at : ${process.env.FRONTEND_UR}` + PORT);
+    console.log(`Server running at : ${process.env.FRONTEND_URL} ` + PORT);
 });
